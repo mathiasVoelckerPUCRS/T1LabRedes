@@ -1,4 +1,8 @@
 {
+    "debug": true,
     "separator": "|",
-    "port": 6064
+    "server": {
+        "port": 6064,
+        "ip": "127.0.0.1"
+    }
 }

@@ -16,14 +16,16 @@ var clients = []
 var server = net.createServer(client => {
     let scope = this
 
+    //push this client to list of connected clients
     clients.push(client)
 
 	client.on('error', err => {
-	   console.log("Error happened: " + err)
+	   console.log(`Unexpected error happened: ${err}`)
 	})
 
 	client.on('end', () => {
-    	console.log("Closed connection.")
+        //TODO: must check if there are running games
+        //TODO: must remove from list of clients
   	})
 
 	client.on('data', data => {
@@ -170,6 +172,6 @@ var server = net.createServer(client => {
     }
 })
 
-server.listen(config.port, '127.0.0.1')
+server.listen(config.server.port, config.server.ip)
 
-console.log(`Server running on port '${config.port}'!`)
+console.log(`Server running on '${config.server.ip}:${config.server.port}'!`)
