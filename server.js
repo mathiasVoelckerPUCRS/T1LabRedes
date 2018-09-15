@@ -61,8 +61,6 @@ var server = net.createServer(client => {
 
         let id = games.length -1
 
-        console.log(id, games.length)
-
         //return to user the game id
         return helper.response.success(id + "")
     }
@@ -75,10 +73,10 @@ var server = net.createServer(client => {
                 k, //Game key
                 g.name //Game name
             ].join(config.separator)
-        }).join(`${config.separator};${config.separator}`)
+        })
 
         //return the list for the client
-        return helper.response.success(result)
+        return helper.response.success(helper.args2Params(result))
     }
 
     //Someone wants to join the game
@@ -93,11 +91,13 @@ var server = net.createServer(client => {
         if (games[gameKey].partner !== null)
             return helper.response.error("game is already being played")
 
+        let game = games[gameKey]
+
         //Get the game and update the partner
-        games[gameKey].partner = client
+        game.partner = client
 
         //let the owner know we are ready to play
-        games[gameKey].client.write("ready")
+        game.owner.write("ready")
 
         return helper.response.success()
     }

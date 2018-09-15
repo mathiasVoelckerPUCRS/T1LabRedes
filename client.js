@@ -64,28 +64,75 @@ const socket = new net.Socket();
 				case "3":
 					scope.menu.credits()
 					break;
+
+				default:
+					csl.log("Opção inválida.")
+					scope.menu.show()
+					break;
 			}
 		},
 
 		listRooms: async () => {
 			let games = await scope.api.getAllRooms()
 
-			csl.log(games)
+			if (games.length > 1) {
+				csl.log("Lista de salas:")
+
+				//Print rooms
+				for (let i = 0; i < games.length ; i += 2)
+					csl.log(`[${games[i]}] Sala '${games[i+1]}'.`)
+
+				//Select room for joining
+				scope.menu.selectRoomForJoin()
+			}
+			else {
+				csl.log("Não há nenhuma sala cadastrada. Seja o primeiro a criar uma.")
+
+				scope.game.show()
+			}
+		},
+
+		selectRoomForJoin: async () => {
+			//ask for room to join
+			let roomId = await csl.question("\nInforme a sala que você quer entrar")
+
+			scope.api.joinGame(roomId)
+				.then(() => {
+					//update game
+					scope.game.current = {
+						name: "sala x",
+						id: roomId
+					}
+
+					//ok... wait for his turn
+					scope.game.hisTurn()
+				})
+				.catch((e) => {
+					//incorrect game
+					csl.clear()
+					csl.log()
+
+					scope.listRooms()
+				})
 		},
 
 		newRoom: async () => {
 			let name = await csl.question("Digite o nome da sala")
 
-			let result = await scope.api.createRoom(name)
+			scope.api.createRoom(name)
+				.then((result) => {
+					//update the current game
+					scope.game.current = {
+						name: name,
+						id: result[0]
+					}
 
-			//update the current game
-			scope.game.current = {
-				name: name,
-				id: result[0]
-			}
-
-			//go to the game itself
-			scope.game.waitingOtherPlayer()
+					//go to the game itself
+					scope.game.waitingOtherPlayer()
+				})
+				.catch((e) => {
+					csl.log(`Error while trying to create room '${e}'`)
+				})
 		},
 
 		credits: () => {
@@ -100,9 +147,23 @@ const socket = new net.Socket();
 		current: {},
 
 		waitingOtherPlayer: () => {
+			scope.game._printGameHeader()
+			
+			csl.log("Waiting for the other player to join the room...")
+		},
+
+		myTurn: () => {
+			csl.log("my turn")
+		},
+
+		hisTurn: () => {
+			scope.game._printGameHeader()
+			csl.log("Waiting for the other player to make his move...")
+		},
+
+		_printGameHeader: () => {
 			csl.clear()
-			csl.log(`Bem-vindo a sala '${scope.game.current.name}'!`)
-			csl.log("Esperando outro jogador chegar na sala...")
+			csl.log(`Welcome to room '${scope.game.current.name}'!`)
 		}
 	},
 
@@ -138,6 +199,10 @@ const socket = new net.Socket();
 
 		createRoom: (name) => {
 			return scope.api.call("NewGame", [ name ])
+		},
+
+		joinGame: id => {
+			return scope.api.call("JoinGame", [ id ])
 		},
 
 		_handleServerReturn: (data) => {
