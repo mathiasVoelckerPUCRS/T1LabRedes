@@ -27,7 +27,7 @@ const socket = new net.Socket();
 	})
 
 	socket.on("data", data => {
-		scope.api.handleServerReturn(data)
+		scope.api._handleServerReturn(data)
 	})
 
 	socket.on("close", () => {
@@ -47,7 +47,7 @@ const socket = new net.Socket();
 			csl.log("[2] - Criar nova sala")
 			csl.log("[3] - Créditos")
 
-			let option = await csl.question("Opção... ")
+			let option = await csl.question("Opção")
 
 			//clear the screen after input
 			csl.clear()
@@ -73,8 +73,19 @@ const socket = new net.Socket();
 			csl.log(games)
 		},
 
-		newRoom: () => {
+		newRoom: async () => {
+			let name = await csl.question("Digite o nome da sala")
 
+			let result = await scope.api.createRoom(name)
+
+			//update the current game
+			scope.game.current = {
+				name: name,
+				id: result[0]
+			}
+
+			//go to the game itself
+			scope.game.waitingOtherPlayer()
 		},
 
 		credits: () => {
@@ -82,6 +93,16 @@ const socket = new net.Socket();
 			csl.log("")
 
 			scope.menu.show()
+		}
+	},
+
+	scope.game = {
+		current: {},
+
+		waitingOtherPlayer: () => {
+			csl.clear()
+			csl.log(`Bem-vindo a sala '${scope.game.current.name}'!`)
+			csl.log("Esperando outro jogador chegar na sala...")
 		}
 	},
 
@@ -96,14 +117,17 @@ const socket = new net.Socket();
 			return promise
 		},
 
-		_callServer: method => {
-			socket.write(method)
+		_callServer: (method, args) => {
+			//parse args -> socket params
+			let params = helper.args2Params(args)
+
+			socket.write(method + config.separator + params)
 		},
 
-		call: method => {
+		call: (method, args = []) => {
 			let promise = scope.api._createPromise(method)
 
-			scope.api._callServer(method)
+			scope.api._callServer(method, args)
 
 			return promise
 		},
@@ -112,9 +136,13 @@ const socket = new net.Socket();
 			return scope.api.call("ListGames")
 		},
 
-		handleServerReturn: (data) => {
+		createRoom: (name) => {
+			return scope.api.call("NewGame", [ name ])
+		},
+
+		_handleServerReturn: (data) => {
 			//parse returned data
-			let args = helper.parseArgs(data)
+			let args = helper.params2Args(data)
 
 			//get method and status
 			let method = args.shift()

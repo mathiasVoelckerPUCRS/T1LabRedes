@@ -7,11 +7,16 @@ const rl = readline.createInterface({
 })
 
 module.exports = {
-    parseArgs: data => {
+    params2Args: data => {
         return data.toString()
             .trim()
-            .split("|")
+            .split(config.separator)
             .map(e => e.replace("-", " "))
+    },
+
+    args2Params: array => {
+        return array.map(s => s.trim().replace(" ", "-"))
+            .join(config.separator)
     },
 
     //Applied shorter name for these variables (will look better in code)
@@ -62,7 +67,7 @@ module.exports = {
 
         question: text => {
             return new Promise(res => {
-                rl.question(text, answer => {
+                rl.question(text + ": ", answer => {
                     res(answer)
                 })
             })

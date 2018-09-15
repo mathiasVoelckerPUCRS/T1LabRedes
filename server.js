@@ -29,7 +29,7 @@ var server = net.createServer(client => {
   	})
 
 	client.on('data', data => {
-        let args = helper.parseArgs(data)
+        let args = helper.params2Args(data)
 
         //Find the respective event the client is trying to call
         let event = "_on" + args[0] + "Event"
@@ -59,8 +59,12 @@ var server = net.createServer(client => {
             matrix: [ '', '', '', '', '', '', '', '', '' ] //Game matrix
         })
 
+        let id = games.length -1
+
+        console.log(id, games.length)
+
         //return to user the game id
-        return helper.response.success(games.length -1)
+        return helper.response.success(id + "")
     }
 
     //List of all existing games
