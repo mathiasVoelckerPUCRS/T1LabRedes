@@ -1,4 +1,10 @@
 const config = require("./config")
+const readline = require('readline')
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+})
 
 module.exports = {
     parseArgs: data => {
@@ -38,5 +44,28 @@ module.exports = {
         error: result => {
             return `error${config.separator}${(result || "")}`
         },
+    },
+
+    console: {
+        debug: what => {
+            if (config.debug)
+                console.log(what)
+        },
+
+        log: what => {
+            console.log(what)
+        },
+
+        clear: () => {
+            console.log('\033c')
+        },
+
+        question: text => {
+            return new Promise(res => {
+                rl.question(text, answer => {
+                    res(answer)
+                })
+            })
+        }
     }
 }
