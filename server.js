@@ -13,11 +13,16 @@ var games = []
 //List of clients of the server
 var clients = []
 
+//Client Id
+var clientId = 0
+
 var server = net.createServer(client => {
+    client.id = clientId++
+
     let scope = this
 
     //push this client to list of connected clients
-    clients.push(client)
+    clients[client.id] = client
 
 	client.on('error', err => {
 	   console.log(`Unexpected error happened: ${err}`)
@@ -39,14 +44,14 @@ var server = net.createServer(client => {
             return client.write(`Event '${args[0]}' not found.`)
 
         //Execute the event and store the result
-        let result = scope[event](args)
+        let result = scope[event](client, args)
 
         //Return the result
         client.write(args[0] + config.separator + result)
     })
 
     //Creation of new game
-    scope._onNewGameEvent = (args) => {
+    scope._onNewGameEvent = (client, args) => {
         //check amount of arguments
         if (args.length < 2)
             return helper.response.error("invalid amount of args")
@@ -66,7 +71,7 @@ var server = net.createServer(client => {
     }
 
     //List of all existing games
-    scope._onListGamesEvent = (args) => {
+    scope._onListGamesEvent = (client, args) => {
         //Consolidate list of all games
         let result = games.map((g, k) => {
             return [
@@ -80,7 +85,7 @@ var server = net.createServer(client => {
     }
 
     //Someone wants to join the game
-    scope._onJoinGameEvent = (args) => {
+    scope._onJoinGameEvent = (client, args) => {
         let gameKey = parseInt(args[1])
 
         //check if the game exists
@@ -97,13 +102,13 @@ var server = net.createServer(client => {
         game.partner = client
 
         //let the owner know we are ready to play
-        game.owner.write("ready")
+        game.owner.write("YourTurn")
 
         return helper.response.success()
     }
 
     //Game summary
-    scope._onGameSummaryEvent = (args) => {
+    scope._onGameSummaryEvent = (client, args) => {
         let gameKey = parseInt(args[1])
         
         //check if the game exists
@@ -118,13 +123,11 @@ var server = net.createServer(client => {
             return helper.response.error("game is not yours (duh)")
 
         //Get the matrix
-        let result = game.matrix.split(config.separator)
-
-        return helper.response.success(result)
+        return helper.response.success(helper.args2Params(game.matrix))
     }
 
     //Game play
-    scope._onGamePlayEvent = (args) => {
+    scope._onGamePlayEvent = (client, args) => {
         //check amount of arguments
         if (args.length < 2)
             return helper.response.error("invalid amount of args")
@@ -163,16 +166,19 @@ var server = net.createServer(client => {
         //check if I win
         if (helper.didIWin(game.matrix, character)) {
             //let the clients know that the game is done
-            client.write("YouWin")
             playerTwo.write("YouLoose")
 
             //TODO: must end the game
+
+            //show that you did win
+            return helper.response.success("win")
         }
-        else
+        else {
             //let the other player know it's his turn to play  
             playerTwo.write("YourTurn")
 
-        return helper.response.success()
+            return helper.response.success("continue")
+        }
     }
 })
 

@@ -23,20 +23,31 @@ module.exports = {
     //'m' stands for -> Matrix (array of 9 elements)
     //'c' stands for -> Character (X or O)
     didIWin: (m, c) => {
+        const diagonal = [[0, 8], [2, 6]]
+
         //Horizontal
-        for (let h in [0, 3, 6])
+        for (let h in [0, 3, 6]) {
+            h = h * 1
+            
             if (m[h] === c && m[h + 1] === c && m[h + 2] === c)
                 return true
+        }
 
         //Vertical
-        for (let v in [0, 1, 2])
+        for (let v in [0, 1, 2]) {
+            v = v * 1
+
             if (m[v] === c && m[v + 3] === c && m[v + 6] === c)
                 return true
+        }
 
         //Diagonal
-        for (let d in [[0, 8], [2, 6]])
+        for (let k in diagonal) {
+            let d = diagonal[k]
+
             if (m[4] === c && m[d[0]] === c && m[d[1]] === c)
                 return true
+        }
 
         return false
     },

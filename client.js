@@ -13,6 +13,7 @@ const socket = new net.Socket();
 
 //execute main
 (function() {
+	csl.clear()
 	csl.log("Welcome to Tic-Tac-Toe.")
 	csl.debug("The program will try to connect on socket server.")
 
@@ -55,20 +56,20 @@ const socket = new net.Socket();
 			switch (option) {
 				case "1":
 					scope.menu.listRooms()
-					break;
+					break
 
 				case "2":
 					scope.menu.newRoom()
-					break;
+					break
 
 				case "3":
 					scope.menu.credits()
-					break;
+					break
 
 				default:
 					csl.log("Opção inválida.")
 					scope.menu.show()
-					break;
+					break
 			}
 		},
 
@@ -110,9 +111,9 @@ const socket = new net.Socket();
 				.catch((e) => {
 					//incorrect game
 					csl.clear()
-					csl.log()
+					csl.log(`Unexpected error while selecting room to join: ${e}`)
 
-					scope.listRooms()
+					scope.menu.listRooms()
 				})
 		},
 
@@ -147,23 +148,109 @@ const socket = new net.Socket();
 		current: {},
 
 		waitingOtherPlayer: () => {
-			scope.game._printGameHeader()
+			scope.game._printHeader()
 			
 			csl.log("Waiting for the other player to join the room...")
 		},
 
-		myTurn: () => {
-			csl.log("my turn")
+		myTurn: async () => {
+			await scope.game._turn(true)
+
+			let response = {}
+
+			while (1) {
+				try {
+					let move = await csl.question("Select one movement to play")
+
+					response = await scope.api.play(scope.game.current.id, move)
+
+					break
+				}
+				catch (e) {
+					csl.log("Incorrect movement. Let's try again...")
+				}
+			}
+
+			//check server response
+			if (response[0] === "win")
+				scope.game.myVictory()
+			else
+				scope.game.hisTurn()
 		},
 
-		hisTurn: () => {
-			scope.game._printGameHeader()
+		hisTurn: async () => {
+			await scope.game._turn()
+
 			csl.log("Waiting for the other player to make his move...")
 		},
 
-		_printGameHeader: () => {
+		myVictory: async () => {
+			await scope.game._printHeader()
+
+			csl.log("Yey :). You won!")
+		},
+
+		myLost: async () => {
+			await scope.game._printHeader()
+
+			csl.log("Ohh :(. You lost. Improve your skills for next time.")
+		},
+
+		handlePushEvent: (event, args) => {
+			switch (event) {
+				case "YourTurn":
+					scope.game.myTurn(args)
+					break
+
+				case "YouWin":
+					scope.game.myVictory()
+					break
+
+				case "YouLoose":
+					scope.game.myLost()
+					break
+
+				default:
+					csl.debug(`Unexpected error. Push event '${event}' not found.`)
+					break
+			}
+		},
+
+		_turn: async (myTurn = false) => {
+			await scope.game._printHeader()
+			await scope.game._printBody(myTurn)
+		},
+
+		_printHeader: async () => {
 			csl.clear()
 			csl.log(`Welcome to room '${scope.game.current.name}'!`)
+		},
+
+		_printBody: async (myTurn) => {
+			try {
+				let matrix = await scope.api.gameSummary(scope.game.current.id)
+
+				csl.log("")
+
+				for (let i = 0, k = 0; i < 3; i++) {
+					let line = "\t|"
+
+					for (let j = 0; j < 3; j++, k++) {
+						let piece = matrix[k]
+						piece = (piece === '' ? (myTurn ? k : ' ') : piece)
+
+						line += `${piece}|`
+
+					}
+
+					csl.log(line)
+				}
+
+				csl.log("")
+			}
+			catch (e) {
+				csl.log(`Unexpected error while trying to display the game matrix: ${e}`)
+			}
 		}
 	},
 
@@ -205,9 +292,19 @@ const socket = new net.Socket();
 			return scope.api.call("JoinGame", [ id ])
 		},
 
+		gameSummary: id => {
+			return scope.api.call("GameSummary", [ id ])
+		},
+
+		play: (id, move) => {
+			return scope.api.call("GamePlay", [ id, move ])
+		},
+
 		_handleServerReturn: (data) => {
 			//parse returned data
 			let args = helper.params2Args(data)
+
+			console.log(args)
 
 			//get method and status
 			let method = args.shift()
@@ -216,16 +313,16 @@ const socket = new net.Socket();
 			//get the promise
 			let promise = scope.api._waitingPromises[method]
 
-			//TODO: if not found, decide what to do
-			if (promise === null || promise === undefined) {
-				//do somth
+			if (promise !== null && promise !== undefined) {
+				//decide if we are going to call the "resolve" or "reject"
+				let invoke = status === "success" ? 0 : 1
+
+				//invoke it
+				promise[invoke](args)
 			}
-
-			//decide if we are going to call the "resolve" or "reject"
-			let invokeKey = status === "success" ? 0 : 1
-
-			//invoke it
-			promise[invokeKey](args)
+			//In case we were not expecting this return, it means this is a 'push' event
+			else
+				scope.game.handlePushEvent(method, args)
 		}
 	}
 
