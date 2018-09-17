@@ -304,8 +304,6 @@ const socket = new net.Socket();
 			//parse returned data
 			let args = helper.params2Args(data)
 
-			console.log(args)
-
 			//get method and status
 			let method = args.shift()
 			let status = args.shift()
