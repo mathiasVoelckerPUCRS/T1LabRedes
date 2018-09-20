@@ -168,7 +168,8 @@ var server = net.createServer(client => {
             //let the clients know that the game is done
             playerTwo.write("YouLoose")
 
-            //TODO: must end the game
+            //end the game
+            scope.helper.removeRoom(key)
 
             //show that you did win
             return helper.response.success("win")
@@ -179,6 +180,9 @@ var server = net.createServer(client => {
             //let the clients know that the game is done
             playerTwo.write("Draw")
 
+            //end the game
+            scope.helper.removeRoom(key)
+
             return helper.response.success("draw")
         }
 
@@ -186,6 +190,12 @@ var server = net.createServer(client => {
         playerTwo.write("YourTurn")
 
         return helper.response.success("continue")
+    }
+
+    scope.helper = {
+        removeRoom: (roomKey) => {
+            delete games[roomKey]
+        }
     }
 })
 
