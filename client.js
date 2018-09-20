@@ -195,21 +195,15 @@ const socket = new net.Socket();
 		},
 
 		myVictory: async () => {
-			await scope.game._printHeader()
-
-			csl.log("Yey :). You won!")
+			scope.game._gameEnded("Yey :). You won!")
 		},
 
 		myLost: async () => {
-			await scope.game._printHeader()
-
-			csl.log("Ohh :(. You lost. Improve your skills for next time.")
+			scope.game._gameEnded("Ohh :(. You lost. Improve your skills for next time.")
 		},
 
 		draw: async() => {
-			await scope.game._printHeader()
-
-			csl.log("Oh no :(. It's a draw. Improve your skills for next time.")
+			scope.game._gameEnded("Oh no :(. It's a draw. Improve your skills for next time.")
 		},
 
 		handlePushEvent: (event, args) => {
@@ -229,6 +223,17 @@ const socket = new net.Socket();
 				default:
 					return csl.debug(`Unexpected error. Push event '${event}' not found.`)
 			}
+		},
+
+		_gameEnded: async (text) => {
+			await scope.game._printHeader()
+
+			csl.log(text)
+
+			scope.game.current = {}
+
+			csl.question("Input any key to continue...")
+				.then(() => scope.menu.show(true))
 		},
 
 		_turn: async (myTurn = false) => {
