@@ -42,7 +42,10 @@ const socket = new net.Socket();
 	})
 
 	scope.menu = {
-		show: async () => {
+		show: async (clear = false) => {
+			if (clear)
+				csl.clear()
+
 			csl.log("Tell us which option you want to navigate:")
 			csl.log("[1] Create new room")
 			csl.log("[2] Rooms available")
@@ -78,6 +81,9 @@ const socket = new net.Socket();
 					for (let i = 0; i < games.length ; i += 2)
 						csl.log(`[${games[i]}] Room '${games[i+1]}'.`)
 
+					//exit this option
+					csl.log("[99] Go back to previous menu")
+
 					//Select room for joining
 					scope.menu.selectRoomForJoin()
 				})
@@ -91,6 +97,9 @@ const socket = new net.Socket();
 		selectRoomForJoin: async () => {
 			//ask for room to join
 			let roomId = await csl.question("\nWhich room you want to go in")
+
+			if (roomId === "99")
+				return scope.menu.show(true)
 
 			scope.api.joinGame(roomId)
 				.then(() => {
