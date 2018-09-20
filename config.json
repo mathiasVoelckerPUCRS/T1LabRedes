@@ -1,5 +1,5 @@
 {
-    "debug": true,
+    "debug": false,
     "separator": "|",
     "server": {
         "port": 6064,
