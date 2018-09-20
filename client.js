@@ -43,33 +43,29 @@ const socket = new net.Socket();
 
 	scope.menu = {
 		show: async () => {
-			csl.log("Digite qual opção do menu você deseja navegar:")
-			csl.log("[1] - Ver salas disponíveis")
-			csl.log("[2] - Criar nova sala")
-			csl.log("[3] - Créditos")
+			csl.log("Tell us which option you want to navigate:")
+			csl.log("[1] Create new room")
+			csl.log("[2] Rooms available")
+			csl.log("[3] Credits")
 
-			let option = await csl.question("Opção")
+			let option = await csl.question("Option")
 
 			//clear the screen after input
 			csl.clear()
 
 			switch (option) {
 				case "1":
-					scope.menu.listRooms()
-					break
+					return scope.menu.newRoom()
 
 				case "2":
-					scope.menu.newRoom()
-					break
+					return scope.menu.listRooms()
 
 				case "3":
-					scope.menu.credits()
-					break
+					return scope.menu.credits()
 
 				default:
-					csl.log("Opção inválida.")
-					scope.menu.show()
-					break
+					csl.log("Invalid options...")
+					return scope.menu.show()
 			}
 		},
 
@@ -77,17 +73,17 @@ const socket = new net.Socket();
 			let games = await scope.api.getAllRooms()
 
 			if (games.length > 1) {
-				csl.log("Lista de salas:")
+				csl.log("List of available rooms:")
 
 				//Print rooms
 				for (let i = 0; i < games.length ; i += 2)
-					csl.log(`[${games[i]}] Sala '${games[i+1]}'.`)
+					csl.log(`[${games[i]}] Room '${games[i+1]}'.`)
 
 				//Select room for joining
 				scope.menu.selectRoomForJoin()
 			}
 			else {
-				csl.log("Não há nenhuma sala cadastrada. Seja o primeiro a criar uma.")
+				csl.log("There are no rooms created yet. Be the first one to create...")
 
 				scope.game.show()
 			}
@@ -95,7 +91,7 @@ const socket = new net.Socket();
 
 		selectRoomForJoin: async () => {
 			//ask for room to join
-			let roomId = await csl.question("\nInforme a sala que você quer entrar")
+			let roomId = await csl.question("\nWhich room you want to go in")
 
 			scope.api.joinGame(roomId)
 				.then(() => {
@@ -118,7 +114,7 @@ const socket = new net.Socket();
 		},
 
 		newRoom: async () => {
-			let name = await csl.question("Digite o nome da sala")
+			let name = await csl.question("Tell us the room name")
 
 			scope.api.createRoom(name)
 				.then((result) => {
@@ -172,10 +168,16 @@ const socket = new net.Socket();
 			}
 
 			//check server response
-			if (response[0] === "win")
-				scope.game.myVictory()
-			else
-				scope.game.hisTurn()
+			switch (response[0]) {
+				case "win":
+					return scope.game.myVictory()
+
+				case "draw":
+					return scope.game.draw()
+
+				default:
+					return scope.game.hisTurn()
+			}
 		},
 
 		hisTurn: async () => {
@@ -196,23 +198,28 @@ const socket = new net.Socket();
 			csl.log("Ohh :(. You lost. Improve your skills for next time.")
 		},
 
+		draw: async() => {
+			await scope.game._printHeader()
+
+			csl.log("Oh no :(. It's a draw. Improve your skills for next time.")
+		},
+
 		handlePushEvent: (event, args) => {
 			switch (event) {
 				case "YourTurn":
-					scope.game.myTurn(args)
-					break
+					return scope.game.myTurn(args)
 
 				case "YouWin":
-					scope.game.myVictory()
-					break
+					return scope.game.myVictory()
 
 				case "YouLoose":
-					scope.game.myLost()
-					break
+					return scope.game.myLost()
+
+				case "Draw":
+					return scope.game.draw()
 
 				default:
-					csl.debug(`Unexpected error. Push event '${event}' not found.`)
-					break
+					return csl.debug(`Unexpected error. Push event '${event}' not found.`)
 			}
 		},
 

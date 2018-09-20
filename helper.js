@@ -6,6 +6,12 @@ const rl = readline.createInterface({
     output: process.stdout
 })
 
+const ttt = {
+    d: [[0, 8], [2, 6]],
+    h: [0, 3, 6],
+    v: [0, 1, 2]
+}
+
 module.exports = {
     params2Args: data => {
         return data.toString()
@@ -23,33 +29,36 @@ module.exports = {
     //'m' stands for -> Matrix (array of 9 elements)
     //'c' stands for -> Character (X or O)
     didIWin: (m, c) => {
-        const diagonal = [[0, 8], [2, 6]]
-
         //Horizontal
-        for (let h in [0, 3, 6]) {
-            h = h * 1
-            
+        for (let k in ttt.h) {
+            let h = ttt.h[k]
+
             if (m[h] === c && m[h + 1] === c && m[h + 2] === c)
                 return true
         }
 
         //Vertical
-        for (let v in [0, 1, 2]) {
-            v = v * 1
+        for (let k in ttt.v) {
+            v = ttt.v[k]
 
             if (m[v] === c && m[v + 3] === c && m[v + 6] === c)
                 return true
         }
 
         //Diagonal
-        for (let k in diagonal) {
-            let d = diagonal[k]
+        for (let k in ttt.d) {
+            let d = ttt.d[k]
 
             if (m[4] === c && m[d[0]] === c && m[d[1]] === c)
                 return true
         }
 
         return false
+    },
+
+    //Check if there is a draw result. All positions are occupied
+    isDraw: (matrix) => {
+        return matrix.filter(m => m.length).length == 9
     },
 
     response: {

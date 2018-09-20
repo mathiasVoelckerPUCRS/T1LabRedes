@@ -173,12 +173,19 @@ var server = net.createServer(client => {
             //show that you did win
             return helper.response.success("win")
         }
-        else {
-            //let the other player know it's his turn to play  
-            playerTwo.write("YourTurn")
 
-            return helper.response.success("continue")
+        //Check if is draw result
+        if (helper.isDraw(game.matrix)) {
+            //let the clients know that the game is done
+            playerTwo.write("Draw")
+
+            return helper.response.success("draw")
         }
+
+        //Or else,just let the other player know it's his turn to play  
+        playerTwo.write("YourTurn")
+
+        return helper.response.success("continue")
     }
 })
 
