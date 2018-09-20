@@ -72,6 +72,9 @@ var server = net.createServer(client => {
 
     //List of all existing games
     scope._onListGamesEvent = (client, args) => {
+        if (!games.length)
+            return helper.response.error("no rooms yet")
+
         //Consolidate list of all games
         let result = games.map((g, k) => {
             return [

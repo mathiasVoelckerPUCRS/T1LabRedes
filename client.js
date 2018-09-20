@@ -70,23 +70,22 @@ const socket = new net.Socket();
 		},
 
 		listRooms: async () => {
-			let games = await scope.api.getAllRooms()
+			scope.api.getAllRooms()
+				.then(games => {
+					csl.log("List of available rooms:")
 
-			if (games.length > 1) {
-				csl.log("List of available rooms:")
+					//Print rooms
+					for (let i = 0; i < games.length ; i += 2)
+						csl.log(`[${games[i]}] Room '${games[i+1]}'.`)
 
-				//Print rooms
-				for (let i = 0; i < games.length ; i += 2)
-					csl.log(`[${games[i]}] Room '${games[i+1]}'.`)
+					//Select room for joining
+					scope.menu.selectRoomForJoin()
+				})
+				.catch(e => {
+					csl.log("<!> There are no rooms created yet. Be the first one to create... <!>\n")
 
-				//Select room for joining
-				scope.menu.selectRoomForJoin()
-			}
-			else {
-				csl.log("There are no rooms created yet. Be the first one to create...")
-
-				scope.game.show()
-			}
+					scope.menu.show()
+				})
 		},
 
 		selectRoomForJoin: async () => {
@@ -107,7 +106,7 @@ const socket = new net.Socket();
 				.catch((e) => {
 					//incorrect game
 					csl.clear()
-					csl.log(`Unexpected error while selecting room to join: ${e}`)
+					csl.log(`<!> Error while selecting room to join: '${e}' <!>\n`)
 
 					scope.menu.listRooms()
 				})
