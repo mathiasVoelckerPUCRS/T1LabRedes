@@ -29,8 +29,7 @@ var server = net.createServer(client => {
 	})
 
 	client.on('end', () => {
-        //TODO: must check if there are running games
-        //TODO: must remove from list of clients
+        scope.helper.removeClient(client)
   	})
 
 	client.on('data', data => {
@@ -76,12 +75,13 @@ var server = net.createServer(client => {
             return helper.response.error("no rooms yet")
 
         //Consolidate list of all games
-        let result = games.map((g, k) => {
-            return [
-                k, //Game key
-                g.name //Game name
-            ].join(config.separator)
-        })
+        let result = games
+            .map((g, k) => {
+                return [
+                    k, //Game key
+                    g.name //Game name
+                ].join(config.separator)
+            })
 
         //return the list for the client
         return helper.response.success(helper.args2Params(result))
@@ -196,8 +196,32 @@ var server = net.createServer(client => {
     }
 
     scope.helper = {
-        removeRoom: (roomKey) => {
-            delete games[roomKey]
+        removeRoom: roomKey => {
+            let game = games[roomKey]
+
+            games = games.filter(g => g.name !== game.name)
+        },
+
+        removeClient: client => {
+            //check if there is running game for this client
+            scope.helper._checkRunningGame(client)
+
+            //remove from list of clients
+            clients = clients.filter(c => c.id !== client.id)
+        },
+
+        _checkRunningGame: c => {
+            for (let i = 0; i < games.length; i++) {
+                let game = games[i]
+
+                const { owner, partner } = game
+
+                if (owner === c || partner === c) {
+                    (owner.id === c.id ? partner : owner).write("Disconnected")
+
+                    return scope.helper.removeRoom(i)
+                }
+            }
         }
     }
 })

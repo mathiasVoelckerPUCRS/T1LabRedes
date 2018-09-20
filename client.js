@@ -206,6 +206,10 @@ const socket = new net.Socket();
 			scope.game._gameEnded("Oh no :(. It's a draw. Improve your skills for next time.")
 		},
 
+		disconnected: async () => {
+			scope.game._gameEnded("Oh no :(. Looks like your partner did leave the game.")
+		},
+
 		handlePushEvent: (event, args) => {
 			switch (event) {
 				case "YourTurn":
@@ -219,6 +223,9 @@ const socket = new net.Socket();
 
 				case "Draw":
 					return scope.game.draw()
+				
+				case "Disconnected":
+					return scope.game.disconnected()
 
 				default:
 					return csl.debug(`Unexpected error. Push event '${event}' not found.`)
